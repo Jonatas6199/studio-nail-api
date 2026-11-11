@@ -1,5 +1,5 @@
 import { Client } from "pg";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import { createHash, randomUUID } from "node:crypto";
 
 try { process.loadEnvFile(".env.local"); } catch {}
@@ -20,25 +20,26 @@ try {
     const account = await client.query("select id from auth.users where lower(email) = lower($1)", [process.env.SUPABASE_OWNER_EMAIL]);
     console.log(JSON.stringify({ connected: true, publicTables: tables.rows.map(r => r.tablename), accountExists: account.rowCount > 0 }));
   } else if (action === "migrate") {
-    const migration = "202611110001_nail_workspace";
-    const sql = await readFile(new URL(`../supabase/migrations/${migration}.sql`, import.meta.url), "utf8");
-    const checksum = createHash("sha256").update(sql).digest("hex");
     await client.query("begin");
     await client.query("select pg_advisory_xact_lock(1207112026)");
     await client.query("create schema if not exists nail_private");
     await client.query("revoke all on schema nail_private from public, anon, authenticated");
     await client.query("create table if not exists nail_private.migrations (name text primary key, checksum text not null, applied_at timestamptz not null default now())");
-    const applied = await client.query("select checksum from nail_private.migrations where name = $1", [migration]);
-    if (applied.rowCount) {
-      if (applied.rows[0].checksum !== checksum) throw new Error("A migração aplicada tem outro conteúdo. Crie uma nova migração.");
-      console.log("Migração já aplicada.");
-    } else {
-      const existing = await client.query("select to_regclass('public.nail_accounts') is not null as exists");
-      if (existing.rows[0].exists) throw new Error("Já existem tabelas nail sem histórico desta migração. Revise antes de continuar.");
+    const directory = new URL("../supabase/migrations/", import.meta.url);
+    const files = (await readdir(directory)).filter(f => /^\d+_[a-z_]+\.sql$/.test(f)).sort();
+    for (const file of files) {
+      const migration = file.slice(0,-4);
+      const sql = await readFile(new URL(file,directory), "utf8");
+      const checksum = createHash("sha256").update(sql).digest("hex");
+      const applied = await client.query("select checksum from nail_private.migrations where name=$1", [migration]);
+      if (applied.rowCount) {
+        if (applied.rows[0].checksum !== checksum) throw new Error("A migração aplicada tem outro conteúdo. Crie uma nova migração.");
+        continue;
+      }
       const statements = sql.replace(/^begin;\s*/i, "").replace(/commit;\s*$/i, "");
       await client.query(statements);
-      await client.query("insert into nail_private.migrations(name,checksum) values($1,$2)", [migration, checksum]);
-      console.log("Tabelas e regras de acesso aplicadas.");
+      await client.query("insert into nail_private.migrations(name,checksum) values($1,$2)", [migration,checksum]);
+      console.log(`Migração aplicada: ${migration}`);
     }
     await client.query("commit");
   } else if (action === "provision") {
@@ -48,7 +49,7 @@ try {
     console.log("Conta autorizada vinculada ao ateliê, sem importar dados de exemplo.");
   } else if (action === "verify") {
     const rows = await client.query("select tablename, rowsecurity from pg_tables where schemaname = 'public' and tablename like 'nail_%' order by tablename");
-    const protectedTables = rows.rows.length === 8 && rows.rows.every(r => r.rowsecurity);
+    const protectedTables = rows.rows.length === 11 && rows.rows.every(r => r.rowsecurity);
     if (!protectedTables) throw new Error("As tabelas não passaram na verificação de RLS.");
     const account = await client.query("select a.owner_id from public.nail_accounts a join auth.users u on u.id=a.owner_id where lower(u.email)=lower($1) and a.active", [process.env.SUPABASE_OWNER_EMAIL]);
     if (account.rowCount !== 1) throw new Error("A conta autorizada não foi vinculada.");
@@ -69,7 +70,7 @@ try {
     await client.query("rollback to savepoint foreign_account");
     if (!denied) throw new Error("Uma conta não autorizada conseguiu acessar o ateliê.");
     await client.query("rollback");
-    console.log(JSON.stringify({ protectedTables: 8, ownerAccess: true, otherAccountsDenied: true, idempotency: true, temporaryWriteRolledBack: true }));
+    console.log(JSON.stringify({ protectedTables: 11, ownerAccess: true, otherAccountsDenied: true, idempotency: true, temporaryWriteRolledBack: true }));
   } else throw new Error("Ação desconhecida.");
 } catch (error) {
   try { await client.query("rollback"); } catch {}

@@ -16,6 +16,7 @@ const appointment = z.object({
   procedures: z.array(z.object({ id, name: name(100), price: cents, duration }).strict()).min(1).max(20),
   overlapConfirmed: z.boolean().optional(),
 }).strict().refine(a => { const [h, m] = a.time.split(":").map(Number); return h * 60 + m + a.duration <= 1440; }, "O atendimento precisa terminar no mesmo dia.");
+const messageContext = z.object({ client: name(100), phone: text(24), date, time, procedures: z.array(name(100)).min(1).max(20), price: cents, paid: cents, deposit: cents, address: text(300), business: name(80) }).strict();
 
 export const commandSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("client.save"), client }).strict(),
@@ -25,7 +26,8 @@ export const commandSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("payment.add"), payment }).strict(),
   z.object({ type: z.literal("expense.add"), expense: z.object({ id, description: name(160), amount: cents.refine(n => n > 0), date, category: z.enum(CATEGORIES as [string, ...string[]]), method: z.enum(METHODS as [string, ...string[]]) }).strict() }).strict(),
   z.object({ type: z.literal("availability.save"), days: z.array(z.object({ date, times: z.array(time).max(48).refine(t => new Set(t).size === t.length) }).strict()).min(1).max(366) }).strict(),
-  z.object({ type: z.literal("business.save"), business: z.object({ name: name(80), professional: name(50), phone: text(24) }).strict() }).strict(),
+  z.object({ type: z.literal("business.save"), business: z.object({ name: name(80), professional: name(50), phone: text(24), address: text(300).optional() }).strict() }).strict(),
+  z.object({ type: z.literal("message.sent"), appointmentId: id, kind: z.enum(["confirmation", "reminder"]), context: messageContext, sent: z.boolean() }).strict(),
 ]);
 
 export const mutationSchema = z.object({ requestId: id, revision: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER), command: commandSchema }).strict();

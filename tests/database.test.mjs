@@ -1,8 +1,9 @@
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import { PGlite } from "@electric-sql/pglite";
+import { messageContext, messageReceipt } from "../src/lib/whatsapp.ts";
 
 const owner = randomUUID(), other = randomUUID(), disabled = randomUUID();
 const customer = randomUUID(), procedure = randomUUID(), appointment = randomUUID();
@@ -10,7 +11,8 @@ const db = new PGlite();
 let revision = 0;
 before(async () => {
   await db.exec("create role anon; create role authenticated; create schema auth; create table auth.users(id uuid primary key); create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$; grant usage on schema public,auth to anon,authenticated; grant execute on function auth.uid() to anon,authenticated;");
-  await db.exec(await readFile(new URL("../supabase/migrations/202611110001_nail_workspace.sql", import.meta.url), "utf8"));
+  const directory = new URL("../supabase/migrations/", import.meta.url);
+  for (const file of (await readdir(directory)).filter(f => f.endsWith(".sql")).sort()) await db.exec(await readFile(new URL(file,directory), "utf8"));
   for (const id of [owner, other, disabled]) {
     await db.query("insert into auth.users(id) values($1)", [id]);
     await db.query("insert into public.nail_accounts(owner_id,active) values($1,$2)", [id, id !== disabled]);
@@ -107,5 +109,60 @@ test("foreign procedure and appointment references cannot cross owner boundaries
   await as(other);
   await assert.rejects(apply({ type: "payment.add", payment: { id: randomUUID(), appointmentId: appointment, amount: 1, date: "2026-11-11", method: "Pix", kind: "balance" } }, randomUUID(), 0), /INVALID_APPOINTMENT/);
   await assert.rejects(apply({ type: "appointment.save", appointment: { ...base(), id: randomUUID() } }, randomUUID(), 0), /PROCEDURE_UNAVAILABLE/);
+  await as(owner);
+});
+
+let messageAppointment;
+test("manual message receipts validate current data, survive retries, and become stale after rescheduling", async () => {
+  const a={...base(),id:randomUUID(),date:"2026-12-15"}; messageAppointment=a.id;
+  let data=await apply({type:"appointment.save",appointment:a});
+  data=await apply({type:"business.save",business:{name:"Ateliê",professional:"Teste",phone:"",address:"Rua das Flores, 10"}});
+  assert.equal(data.business.address,"Rua das Flores, 10");
+  const current=data.appointments.find(x=>x.id===a.id); const context=messageContext(data,current);
+  await assert.rejects(apply({type:"message.sent",appointmentId:a.id,kind:"reminder",context:{...context,price:1},sent:true}),/MESSAGE_CHANGED/);
+  const command={type:"message.sent",appointmentId:a.id,kind:"reminder",context,sent:true};
+  const request=randomUUID(), expected=revision;
+  data=await apply(command,request); data=await apply(command,request,expected);
+  assert.equal(data.messages.length,1); assert.ok(messageReceipt(data,current,"reminder"));
+  data=await apply({type:"appointment.save",appointment:{...a,time:"10:00"}});
+  assert.equal(messageReceipt(data,data.appointments.find(x=>x.id===a.id),"reminder"),undefined);
+  await as(other); await assert.rejects(apply(command,randomUUID(),0),/INVALID_APPOINTMENT/); await as(owner);
+});
+
+const subscription={endpoint:"https://web.push.apple.com/test-only",keys:{p256dh:"B"+"a".repeat(86),auth:"a".repeat(22)}};
+test("notification settings isolate users and the worker has no workspace access", async () => {
+  await db.query("select public.nail_push_subscription('save',$1::jsonb)",[JSON.stringify(subscription)]);
+  await as(other);
+  const result=await db.query("select public.nail_push_subscription('test',$1::jsonb) as sub",[JSON.stringify(subscription)]);
+  assert.equal(result.rows[0].sub,null);
+  await assert.rejects(db.query("select public.nail_claim_push()"),/permission denied/);
+  await db.exec("reset role; set role nail_push_worker");
+  await assert.rejects(db.query("select * from public.nail_clients"),/permission denied/);
+  await assert.rejects(db.query("select public.nail_read_workspace()"),/permission denied/);
+  await as(owner);
+});
+
+test("scheduled push obeys the 09:00 boundary, leases jobs, deduplicates delivery and respects manual sends", async () => {
+  async function claim(now) {
+    await db.exec("reset role; update public.nail_push_subscriptions set retry_after=now()-interval '1 minute'; set role nail_push_worker");
+    return (await db.query("select public.nail_claim_push(20,$1::timestamptz) as jobs",[now])).rows[0].jobs;
+  }
+  assert.equal((await claim("2026-12-13T11:59:00Z")).length,0);
+  let jobs=await claim("2026-12-13T12:00:00Z"); assert.equal(jobs.length,1); assert.equal(jobs[0].items.length,1);
+  const leased=await db.query("select public.nail_claim_push(20,'2026-12-13T12:00:00Z') as jobs"); assert.equal(leased.rows[0].jobs.length,0);
+  await db.query("select public.nail_complete_push($1,$2::jsonb,'delivered')",[jobs[0].id,JSON.stringify(jobs[0].items)]);
+  assert.equal((await claim("2026-12-13T12:01:00Z")).length,0);
+  await as(owner);
+  let data=(await db.query("select public.nail_read_workspace() as workspace")).rows[0].workspace.data;
+  let a=data.appointments.find(x=>x.id===messageAppointment);
+  data=await apply({type:"appointment.save",appointment:{...a,time:"11:00"}});
+  a=data.appointments.find(x=>x.id===messageAppointment);
+  await apply({type:"message.sent",appointmentId:a.id,kind:"reminder",context:messageContext(data,a),sent:true});
+  assert.equal((await claim("2026-12-13T12:01:00Z")).length,0);
+  await as(owner);
+  await apply({type:"message.sent",appointmentId:a.id,kind:"reminder",context:messageContext(data,a),sent:false});
+  jobs=await claim("2026-12-13T12:01:00Z"); assert.equal(jobs.length,1);
+  await db.query("select public.nail_complete_push($1,'[]'::jsonb,'expired')",[jobs[0].id]);
+  assert.equal((await claim("2026-12-13T12:01:00Z")).length,0);
   await as(owner);
 });

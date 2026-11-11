@@ -49,4 +49,8 @@ A usuária escolheu manter apenas os limites do aplicativo novo e suspender a AP
 - Conferir login e salvamento autenticado na URL pública.
 - Conferir consumo e previsão da conta no painel do Railway após o uso real.
 
+## WhatsApp e notificações
+
+As mensagens de confirmação e lembrete abrem o WhatsApp com texto pronto; o envio é manual. Veja [WHATSAPP.md](WHATSAPP.md). As notificações de lembretes usam o mesmo serviço, com worker habilitado e uma conexão de banco restrita. Não foi criado outro serviço ou contratada uma API paga. Os limites de recursos do aplicativo novo continuam os mesmos.
+
 O acesso ao aplicativo é restrito à conta já liberada no Supabase. O modo de demonstração permanece disponível apenas no desenvolvimento local.

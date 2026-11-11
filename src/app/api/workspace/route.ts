@@ -35,6 +35,7 @@ export async function POST(request: Request) {
         INACTIVE_APPOINTMENT: ["Este atendimento foi cancelado ou marcado como não compareceu.", 422],
         PROCEDURE_UNAVAILABLE: ["Um procedimento foi arquivado ou não está disponível. Confira sua seleção.", 422],
         REQUEST_REUSED: ["Não foi possível repetir esta operação. Atualize a página.", 409],
+        MESSAGE_CHANGED: ["Os dados deste atendimento mudaram. Atualize a mensagem antes de marcar o envio.", 409],
       };
       const match = messages[error.message];
       if (error.code === "42501") return response({ message: "Esta conta não tem acesso a este ateliê." }, 403);

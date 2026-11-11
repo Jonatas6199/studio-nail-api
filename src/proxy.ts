@@ -24,4 +24,4 @@ export async function proxy(request: NextRequest) {
   return response;
 }
 
-export const config = { matcher: ["/", "/login", "/redefinir-senha", "/api/workspace", "/auth/:path*"] };
+export const config = { matcher: ["/", "/login", "/redefinir-senha", "/api/workspace", "/api/push", "/auth/:path*"] };

@@ -788,3 +788,38 @@ th, td { font-size: 11px; color: #887358; }
   .topbar-profile { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; } }
+
+/* Personal communication, always sent by the professional. */
+.reminder-panel { margin-bottom: 28px; padding: 24px; }
+.reminder-heading { display:flex; gap:14px; align-items:center; margin-bottom:16px; }
+.reminder-heading h2 { font-size:22px; margin:4px 0; }
+.reminder-heading p:not(.eyebrow) { color:var(--muted); font-size:13px; margin:6px 0; }
+.reminder-heading>.subtle-badge { margin-left:auto; white-space:nowrap; }
+.reminder-symbol { width:44px; height:44px; border-radius:50%; background:#edf1eb; color:#73816c; display:grid; place-items:center; flex-shrink:0; }
+.reminder-list { display:grid; }
+.reminder-row { width:100%; padding:16px 0; display:flex; align-items:center; gap:12px; background:none; border:0; border-top:1px solid var(--line); text-align:left; color:inherit; }
+.reminder-row>span:nth-child(2) { min-width:0; flex:1; }
+.reminder-row strong { font-size:14px; font-weight:500; display:block; }
+.reminder-row small { display:block; font-size:12px; color:var(--muted); margin-top:5px; line-height:1.5; }
+.reminder-open { display:flex; align-items:center; gap:5px; color:#74816d; font-size:12px; }
+.reminder-row:hover .reminder-open { text-decoration:underline; }
+.message-actions { display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+.appointment-messages { margin:24px 0; }
+.appointment-messages h3 { margin-bottom:14px; font-size:15px; }
+.message-recipient { display:flex; gap:12px; align-items:center; }
+.message-recipient strong,.message-recipient small { display:block; }
+.message-recipient small { margin-top:4px; color:var(--muted); font-size:13px; }
+.whatsapp-editor textarea { line-height:1.65; font-size:14px; resize:vertical; min-height:260px; }
+.message-confirm { padding:18px; background:#f6f3ed; border-radius:12px; display:grid; gap:12px; }
+.message-confirm p { margin:0; font-size:13px; }
+.message-confirm small { font-size:11px; color:var(--muted); line-height:1.5; }
+.message-sent { background:#f0f3ec; color:#596952; padding:15px; border-radius:12px; }
+.message-sent>span { display:flex; align-items:center; gap:8px; font-size:13px; line-height:1.6; }
+.install-guide { padding:18px; background:#f7f4ee; border-radius:12px; line-height:1.7; font-size:13px; }
+.install-guide>svg { display:block; margin-bottom:9px; }
+.install-guide ol { padding-left:19px; margin:10px 0; }
+.install-guide small { color:var(--muted); display:block; }
+.form-success { color:#607451; font-size:13px; line-height:1.6; }
+@media(max-width:600px) { .reminder-panel { padding:18px; margin-bottom:20px; } .reminder-heading { align-items:flex-start; } .reminder-heading h2 { font-size:20px; } .reminder-heading>.subtle-badge { display:none; } .reminder-open { font-size:0; } .reminder-open svg { width:19px; height:19px; } .message-actions>.button { flex:1; justify-content:center; } .whatsapp-editor textarea { font-size:16px; } }
+
+a.button { text-decoration:none; }

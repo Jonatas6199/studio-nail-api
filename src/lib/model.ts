@@ -9,7 +9,10 @@ export type Appointment = {
 };
 export type Payment = { id: string; appointmentId: string; amount: number; date: string; method: string; kind: "deposit" | "balance" };
 export type Expense = { id: string; description: string; amount: number; date: string; category: string; method: string };
-export type Store = { version: 1; clients: Client[]; procedures: Procedure[]; appointments: Appointment[]; payments: Payment[]; expenses: Expense[]; availability: Record<string, string[]>; business: { name: string; professional: string; phone: string } };
+export type MessageKind = "confirmation" | "reminder";
+export type MessageContext = { client: string; phone: string; date: string; time: string; procedures: string[]; price: number; paid: number; deposit: number; address: string; business: string };
+export type MessageReceipt = { appointmentId: string; kind: MessageKind; context: MessageContext; sentAt: string };
+export type Store = { version: 1; clients: Client[]; procedures: Procedure[]; appointments: Appointment[]; payments: Payment[]; expenses: Expense[]; availability: Record<string, string[]>; business: { name: string; professional: string; phone: string; address?: string }; messages?: MessageReceipt[] };
 
 export const money = (value: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value / 100);
 export const todayISO = () => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
