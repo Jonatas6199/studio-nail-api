@@ -2,7 +2,11 @@
 
 Gestão de agenda para uma nail designer, com Next.js, React, TypeScript e Supabase.
 
-**Etapa 2:** login real por e-mail e senha, sessão protegida e persistência no Supabase. A integração com Google Agenda e a publicação pertencem à etapa 3 e dependem de autorização.
+Login real por e-mail e senha, sessão protegida, persistência no Supabase e publicação no Railway.
+
+Aplicação publicada: https://studio-nail-api-production.up.railway.app
+
+A integração com o Google Agenda foi adiada a pedido da usuária e permanece inativa. As credenciais cadastradas no Railway não iniciam nenhuma sincronização sozinhas.
 
 ## Executar
 
@@ -73,6 +77,10 @@ O fluxo de envio de e-mail de recuperação está implementado, mas o recebiment
 
 Somente em desenvolvimento, `http://127.0.0.1:3335/demo` abre a interface com dados fictícios locais, separada da conta real. A rota não está disponível em produção. O reset da demonstração altera apenas os dados desse modo.
 
-## Próxima etapa
+## Publicação e próximos passos
 
-Google Agenda nos dois sentidos, revisão de alterações e exclusões externas, preparação da publicação e conferência do custo de operação. Nenhum serviço de hospedagem foi criado ou publicado nesta etapa.
+O repositório `Jonatas6199/studio-nail-api` publica somente este projeto no serviço novo `studio-nail-api` do Railway. A API anterior permanece no projeto separado. A aplicação usa uma imagem standalone e não precisa da conexão administrativa do PostgreSQL em produção.
+
+Ver [docs/RAILWAY.md](docs/RAILWAY.md) para configuração, verificações e cuidados com o orçamento compartilhado.
+
+Para uma próxima etapa, após nova autorização: Google Agenda nos dois sentidos, revisão de alterações e exclusões externas e validação completa da integração. O recebimento real dos e-mails de recuperação continua dependendo da configuração de envio do Supabase.
