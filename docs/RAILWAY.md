@@ -37,6 +37,8 @@ Na conferência inicial, o painel indicava aproximadamente US$ 0,09 de consumo n
 
 Um limite rígido de consumo do workspace pode suspender todos os serviços, inclusive a API antiga. Ele só deve ser alterado após autorização explícita dessa consequência. Os limites de recursos do serviço novo não alteram a configuração da API antiga.
 
+A usuária escolheu manter apenas os limites do aplicativo novo e suspender a API antiga por conta própria quando decidir. Não foi configurado um teto global de cobrança nem foi suspensa a API antiga. Portanto, o orçamento de R$ 50 é uma meta de operação a acompanhar, e não um bloqueio automático de faturamento.
+
 ## Verificações
 
 - `/api/health`: 200 com configuração válida.
