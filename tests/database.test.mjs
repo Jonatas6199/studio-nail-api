@@ -166,3 +166,27 @@ test("scheduled push obeys the 09:00 boundary, leases jobs, deduplicates deliver
   assert.equal((await claim("2026-12-13T12:01:00Z")).length,0);
   await as(owner);
 });
+
+test("a deposit correction updates the same receipt, audits the old value and is idempotent", async () => {
+  const before=(await db.query("select public.nail_read_workspace() as workspace")).rows[0].workspace.data;
+  const payment=before.payments.find(p=>p.appointmentId===appointment&&p.kind==='deposit');
+  const command={type:'payment.update',payment:{id:payment.id,amount:2500,date:'2026-11-10',method:'Dinheiro'}};
+  const request=randomUUID(),expected=revision;
+  let data=await apply(command,request);data=await apply(command,request,expected);
+  assert.equal(data.payments.length,before.payments.length);assert.equal(data.payments.find(p=>p.id===payment.id).amount,2500);
+  assert.equal(data.payments.find(p=>p.id===payment.id).date,'2026-11-10');assert.equal(data.payments.find(p=>p.id===payment.id).kind,'deposit');
+  await db.exec('reset role');const audit=(await db.query('select previous_values from public.nail_requests where owner_id=$1 and request_id=$2',[owner,request])).rows[0].previous_values;assert.equal(audit.amount,3000);await as(owner);
+  await assert.rejects(apply({...command,payment:{...command.payment,amount:3001}}),/PAYMENT_EXCEEDS_TOTAL/);
+  data=await apply({...command,payment:{...command.payment,amount:0}});assert.equal(data.payments.find(p=>p.id===payment.id).amount,0);
+  await as(other);await assert.rejects(apply(command,randomUUID(),0),/INVALID_PAYMENT/);await as(owner);
+});
+
+test("unknown historical times and prices remain explicit and can be filled later",async()=>{
+  const a={...base(),id:randomUUID(),date:'2026-07-03',time:'00:00',timeUnknown:true,price:0,pricePending:true};
+  let data=await apply({type:'appointment.save',appointment:a});let saved=data.appointments.find(v=>v.id===a.id);
+  assert.equal(saved.pricePending,true);assert.equal(saved.timeUnknown,true);
+  const context=messageContext(data,saved);data=await apply({type:'message.sent',appointmentId:a.id,kind:'confirmation',sent:true,context});assert.ok(messageReceipt(data,saved,'confirmation'));
+  data=await apply({type:'appointment.save',appointment:{...a,time:'09:00',timeUnknown:false,price:12000,pricePending:false}});saved=data.appointments.find(v=>v.id===a.id);
+  assert.equal(saved.pricePending,undefined);assert.equal(saved.timeUnknown,undefined);assert.equal(saved.price,12000);assert.equal(messageReceipt(data,saved,'confirmation'),undefined);
+  data=await apply({type:'payment.add',payment:{id:randomUUID(),appointmentId:a.id,amount:12000,date:a.date,method:'Não informado',kind:'balance'}});assert.equal(data.payments.at(-1).method,'Não informado');
+});

@@ -18,10 +18,10 @@ export function messageContext(store: Store, appointment: Appointment): MessageC
   return { client: client?.name ?? "Cliente", phone: client?.phone ?? "", date: appointment.date, time: appointment.time,
     procedures: appointment.procedures.map(p => p.name), price: appointment.price, paid: paidFor(store, appointment.id),
     deposit: store.payments.filter(p => p.appointmentId === appointment.id && p.kind === "deposit").reduce((sum, p) => sum + p.amount, 0),
-    address: store.business.address ?? "", business: store.business.name };
+    address: store.business.address ?? "", business: store.business.name, ...(appointment.pricePending ? { pricePending: true } : {}), ...(appointment.timeUnknown ? { timeUnknown: true } : {}) };
 }
 export function contextKey(c: MessageContext): string {
-  return JSON.stringify([c.client, c.phone, c.date, c.time, c.procedures, c.price, c.paid, c.deposit, c.address, c.business]);
+  return JSON.stringify([c.client, c.phone, c.date, c.time, c.procedures, c.price, c.paid, c.deposit, c.address, c.business, c.pricePending ?? false, c.timeUnknown ?? false]);
 }
 export function messageReceipt(store: Store, a: Appointment, kind: MessageKind) {
   const context = contextKey(messageContext(store, a));
@@ -32,10 +32,11 @@ export function appointmentMessage(context: MessageContext, kind: MessageKind): 
   const c = context; const date = c.date.split("-").reverse().join("/");
   const greeting = `Olá, ${c.client}!`;
   const intro = kind === "confirmation" ? `Agendamento confirmado para o dia ${date} às ${c.time} horas.` : `Passando para lembrar do seu agendamento no dia ${date} às ${c.time} horas.`;
-  const lines = [greeting, "", intro, "", `Procedimento${c.procedures.length > 1 ? "s" : ""}: ${c.procedures.join(" + ")}`, `Endereço: ${c.address || "[informe o endereço]"}`, `Valor do atendimento: ${amount(c.price)}`];
+  const lines = [greeting, "", intro, "", `Procedimento${c.procedures.length > 1 ? "s" : ""}: ${c.procedures.join(" + ")}`, `Endereço: ${c.address || "[informe o endereço]"}`, `Valor do atendimento: ${c.pricePending ? "a definir" : amount(c.price)}`];
   if (c.deposit > 0) lines.push(`Sinal já recebido: ${amount(c.deposit)}`);
   if (c.paid > c.deposit && c.paid < c.price) lines.push(`Total já recebido: ${amount(c.paid)}`);
-  if (c.paid >= c.price) lines.push(c.price ? "Pagamento integral já recebido." : "Atendimento sem cobrança.");
+  if (c.pricePending) { /* The amount is still unknown, not a free appointment. */ }
+  else if (c.paid >= c.price) lines.push(c.price ? "Pagamento integral já recebido." : "Atendimento sem cobrança.");
   else lines.push(`Valor restante: ${amount(Math.max(0, c.price - c.paid))}`);
   lines.push("", kind === "confirmation" ? "Te espero! ✨" : "Te espero! Se precisar de algo, me avise. ✨", c.business);
   return lines.join("\n");
@@ -51,5 +52,5 @@ export function saoPauloNow(now = new Date()) {
 }
 export function pendingReminders(store: Store, now = new Date()) {
   const current = saoPauloNow(now);
-  return store.appointments.filter(a => a.status === "scheduled" && `${a.date}T${a.time}` >= `${current.date}T${current.time}` && `${addDays(a.date, -2)}T09:00` <= `${current.date}T${current.time}` && !messageReceipt(store, a, "reminder")).sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`));
+  return store.appointments.filter(a => a.status === "scheduled" && !a.timeUnknown && `${a.date}T${a.time}` >= `${current.date}T${current.time}` && `${addDays(a.date, -2)}T09:00` <= `${current.date}T${current.time}` && !messageReceipt(store, a, "reminder")).sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`));
 }

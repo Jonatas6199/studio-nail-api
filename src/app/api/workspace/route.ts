@@ -30,6 +30,7 @@ export async function POST(request: Request) {
       const messages: Record<string, [string, number]> = {
         STALE_REVISION: ["Seus dados mudaram em outra tela. Atualizamos a agenda; confira e salve novamente.", 409],
         OVERLAP: ["Este horário conflita com outro atendimento. Edite o agendamento e confirme a sobreposição.", 422],
+        INVALID_PAYMENT: ["Este recebimento não foi encontrado. Atualize o atendimento.", 422],
         PAYMENT_EXCEEDS_TOTAL: ["O recebimento ultrapassa o saldo pendente.", 422],
         PRICE_BELOW_PAID: ["O valor do atendimento não pode ser menor que o total já recebido.", 422],
         INACTIVE_APPOINTMENT: ["Este atendimento foi cancelado ou marcado como não compareceu.", 422],

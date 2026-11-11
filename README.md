@@ -69,7 +69,7 @@ npm run build
 node scripts/check-public-access.mjs
 ```
 
-Há 18 testes de validação, isolamento, confirmação de conflitos, transações, valores e controle de revisão, executados em PostgreSQL isolado com PGlite. No Supabase real, foram verificadas as onze tabelas protegidas, a negação de acesso anônimo, o isolamento de contas e uma gravação revertida. O login real foi realizado pela usuária, e o salvamento autenticado pela interface foi conferido após recarregar a página.
+Há 23 testes de validação, isolamento, confirmação de conflitos, transações, valores e controle de revisão, executados em PostgreSQL isolado com PGlite. No Supabase real, foram verificadas as onze tabelas protegidas, a negação de acesso anônimo, o isolamento de contas e uma gravação revertida. O login real foi realizado pela usuária, e o salvamento autenticado pela interface foi conferido após recarregar a página.
 
 O fluxo de envio de e-mail de recuperação está implementado, mas o recebimento real da mensagem depende das URLs permitidas e do serviço de e-mail configurado no Supabase. Nenhum e-mail de teste foi enviado automaticamente.
 
@@ -88,3 +88,7 @@ Para uma próxima etapa, após nova autorização: Google Agenda nos dois sentid
 ## WhatsApp e lembretes
 
 Confirmações e lembretes com prévia editável e abertura manual do WhatsApp, endereço do ateliê, sinal e saldo. Pendências na agenda a partir das 09h, dois dias antes, com marcação manual de envio. Notificações opcionais no iPhone após instalar na Tela de Início e permitir os avisos. Consulte [docs/WHATSAPP.md](docs/WHATSAPP.md) para uso, operação e limites. Não usa API paga de mensagens.
+
+## Cancelamento, correções e histórico importado
+
+O botão Cancelar agendamento pede confirmação e preserva os recebimentos. O lápis em Recebimentos corrige o sinal ou outro pagamento sem duplicar entradas. Histórico sem preço ou horário usa indicações explícitas, com procedimentos editáveis e avisos de sobreposição. Consulte [docs/IMPORTACAO.md](docs/IMPORTACAO.md) para as regras e a operação da importação.

@@ -16,7 +16,7 @@ export function WhatsAppMessage({ store, appointment, kind, onSent, onSettings }
   const [busy, setBusy] = useState(false);
   const receipt = messageReceipt(store, appointment, kind);
   const number = whatsappNumber(context.phone);
-  const ready = number && context.address.trim() && message.trim();
+  const ready = !context.timeUnknown && number && context.address.trim() && message.trim();
   const link = ready ? whatsappLink(context.phone, message) : null;
   async function copy() {
     try { await navigator.clipboard.writeText(message); setCopied(true); setError(""); }
@@ -29,6 +29,7 @@ export function WhatsAppMessage({ store, appointment, kind, onSent, onSettings }
   }
   return <div className="editor-form whatsapp-editor">
     <div className="message-recipient"><span className="avatar sage"><MessageCircle size={22} /></span><div><strong>{context.client}</strong><small>{context.phone || "Sem telefone cadastrado"}</small></div></div>
+    {context.timeUnknown && <p className="warning-box" role="alert">Defina o horário deste atendimento antes de preparar a mensagem.</p>}
     {!number && <p className="warning-box" role="alert">Cadastre um telefone válido com DDD na ficha da cliente para abrir o WhatsApp.</p>}
     {!context.address.trim() && <div className="warning-box">Preencha o endereço do ateliê antes de abrir a mensagem.<button className="text-link" onClick={onSettings}>Ir às configurações</button></div>}
     <label>Mensagem para a cliente<textarea rows={14} maxLength={4000} value={message} onChange={e => { setMessage(e.target.value); setCopied(false); }} /></label>

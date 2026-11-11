@@ -6,15 +6,18 @@ export type Appointment = {
   procedures: { id: string; name: string; price: number; duration: number }[];
   price: number; notes: string; status: "scheduled" | "completed" | "cancelled" | "absent";
   overlapConfirmed?: boolean; googleDeletionPending?: boolean;
+  pricePending?: boolean; timeUnknown?: boolean;
 };
 export type Payment = { id: string; appointmentId: string; amount: number; date: string; method: string; kind: "deposit" | "balance" };
 export type Expense = { id: string; description: string; amount: number; date: string; category: string; method: string };
 export type MessageKind = "confirmation" | "reminder";
-export type MessageContext = { client: string; phone: string; date: string; time: string; procedures: string[]; price: number; paid: number; deposit: number; address: string; business: string };
+export type MessageContext = { client: string; phone: string; date: string; time: string; procedures: string[]; price: number; paid: number; deposit: number; address: string; business: string; pricePending?: boolean; timeUnknown?: boolean };
 export type MessageReceipt = { appointmentId: string; kind: MessageKind; context: MessageContext; sentAt: string };
 export type Store = { version: 1; clients: Client[]; procedures: Procedure[]; appointments: Appointment[]; payments: Payment[]; expenses: Expense[]; availability: Record<string, string[]>; business: { name: string; professional: string; phone: string; address?: string }; messages?: MessageReceipt[] };
 
 export const money = (value: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value / 100);
+export const appointmentPrice = (a: Appointment) => a.pricePending ? "Valor a definir" : money(a.price);
+export const appointmentStart = (a: Appointment) => a.timeUnknown ? "Horário não informado" : a.time;
 export const todayISO = () => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
 export const dateObject = (date: string) => new Date(`${date}T12:00:00`);
 export const isoDate = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
@@ -28,10 +31,11 @@ export const durationLabel = (duration: number) => `${Math.floor(duration / 60) 
 export const initials = (name: string) => name.split(" ").filter(Boolean).slice(0, 2).map(n => n[0]).join("");
 export const uid = () => crypto.randomUUID();
 export const paidFor = (store: Store, id: string) => store.payments.filter(p => p.appointmentId === id).reduce((sum, p) => sum + p.amount, 0);
-export function conflicts(store: Store, draft: Pick<Appointment, "id" | "date" | "time" | "duration">) {
-  return store.appointments.filter(a => a.id !== draft.id && a.date === draft.date && a.status !== "cancelled" && a.status !== "absent" && minutes(a.time) < minutes(draft.time) + draft.duration && minutes(a.time) + a.duration > minutes(draft.time));
+export function conflicts(store: Store, draft: Pick<Appointment, "id" | "date" | "time" | "duration"> & { timeUnknown?: boolean }) {
+  if (draft.timeUnknown) return [];
+  return store.appointments.filter(a => !a.timeUnknown && a.id !== draft.id && a.date === draft.date && a.status !== "cancelled" && a.status !== "absent" && minutes(a.time) < minutes(draft.time) + draft.duration && minutes(a.time) + a.duration > minutes(draft.time));
 }
-export const METHODS = ["Pix", "Dinheiro", "Cartão de crédito", "Cartão de débito", "Transferência", "Outro"];
+export const METHODS = ["Pix", "Dinheiro", "Cartão de crédito", "Cartão de débito", "Transferência", "Outro", "Não informado"];
 export const CATEGORIES = ["Insumos", "Equipamentos", "Aluguel", "Cursos", "Marketing", "Outros"];
 export const STATUS: Record<Appointment["status"], string> = { scheduled: "Agendado", completed: "Concluído", cancelled: "Cancelado", absent: "Não compareceu" };
 export const COLORS = ["rose", "sage", "sand", "lilac", "clay"];

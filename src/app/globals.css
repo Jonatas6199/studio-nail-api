@@ -823,3 +823,5 @@ th, td { font-size: 11px; color: #887358; }
 @media(max-width:600px) { .reminder-panel { padding:18px; margin-bottom:20px; } .reminder-heading { align-items:flex-start; } .reminder-heading h2 { font-size:20px; } .reminder-heading>.subtle-badge { display:none; } .reminder-open { font-size:0; } .reminder-open svg { width:19px; height:19px; } .message-actions>.button { flex:1; justify-content:center; } .whatsapp-editor textarea { font-size:16px; } }
 
 a.button { text-decoration:none; }
+
+.overlap-badge { display:inline-flex; align-items:center; gap:5px; color:#9b6546; font-size:11px; margin:3px 0 5px; }
