@@ -190,3 +190,11 @@ test("unknown historical times and prices remain explicit and can be filled late
   assert.equal(saved.pricePending,undefined);assert.equal(saved.timeUnknown,undefined);assert.equal(saved.price,12000);assert.equal(messageReceipt(data,saved,'confirmation'),undefined);
   data=await apply({type:'payment.add',payment:{id:randomUUID(),appointmentId:a.id,amount:12000,date:a.date,method:'Não informado',kind:'balance'}});assert.equal(data.payments.at(-1).method,'Não informado');
 });
+
+test('an appointment without a known start time never triggers a phone reminder',async()=>{
+  await apply({type:'appointment.save',appointment:{...base(),id:randomUUID(),date:'2026-12-21',time:'00:00',timeUnknown:true,price:0,pricePending:true}});
+  await db.query("select public.nail_push_subscription('save',$1::jsonb)",[JSON.stringify({...subscription,endpoint:'https://web.push.apple.com/unknown-time-test'})]);
+  await db.exec('reset role; set role nail_push_worker');
+  const jobs=(await db.query("select public.nail_claim_push(20,'2026-12-19T12:00:00Z') as jobs")).rows[0].jobs;
+  assert.equal(jobs.length,0);await as(owner);
+});

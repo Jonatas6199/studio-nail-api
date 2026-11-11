@@ -69,7 +69,7 @@ npm run build
 node scripts/check-public-access.mjs
 ```
 
-Há 23 testes de validação, isolamento, confirmação de conflitos, transações, valores e controle de revisão, executados em PostgreSQL isolado com PGlite. No Supabase real, foram verificadas as onze tabelas protegidas, a negação de acesso anônimo, o isolamento de contas e uma gravação revertida. O login real foi realizado pela usuária, e o salvamento autenticado pela interface foi conferido após recarregar a página.
+Há 24 testes de validação, isolamento, confirmação de conflitos, transações, valores e controle de revisão, executados em PostgreSQL isolado com PGlite. No Supabase real, foram verificadas as onze tabelas protegidas, a negação de acesso anônimo, o isolamento de contas e uma gravação revertida. O login real foi realizado pela usuária, e o salvamento autenticado pela interface foi conferido após recarregar a página.
 
 O fluxo de envio de e-mail de recuperação está implementado, mas o recebimento real da mensagem depende das URLs permitidas e do serviço de e-mail configurado no Supabase. Nenhum e-mail de teste foi enviado automaticamente.
 
