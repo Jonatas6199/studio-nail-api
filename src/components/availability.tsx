@@ -7,7 +7,7 @@ import { Button, Dialog, IconButton, SectionTitle } from "./ui";
 
 export function Availability({ store, date, today, onDate, onChange, onNotify }: { store: Store; date: string; today: string; onDate: (d: string) => void; onChange: (availability: Store["availability"]) => boolean | Promise<boolean>; onNotify: (s: string) => void }) {
   const dates = weekDates(date);
-  const [days, setDays] = useState([0, 1, 2, 3, 4]); const [times, setTimes] = useState(["09:00", "13:00", "16:00"]); const [newTime, setNewTime] = useState("18:00");
+  const [days, setDays] = useState([1, 2, 3, 4, 5]); const [times, setTimes] = useState(["09:00", "13:00", "16:00"]); const [newTime, setNewTime] = useState("18:00");
   const [editing, setEditing] = useState<string | null>(null); const [custom, setCustom] = useState<string[]>([]); const [customTime, setCustomTime] = useState("09:00"); const [error, setError] = useState("");
   const dayNames = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
   async function apply() { if (!days.length || !times.length) { setError("Selecione pelo menos um dia e um horário."); return; } const next = { ...store.availability }; days.forEach(i => { next[dates[i]] = [...times].sort(); }); if (await onChange(next)) { setError(""); onNotify("Horários aplicados aos dias selecionados."); } }
